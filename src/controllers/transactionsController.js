@@ -90,6 +90,7 @@ const updateTransactionForId = async (req, res) => {
   try {
     const { id } = req.params;
     const { descricao, valor, data, categoria_id, tipo } = req.body;
+    
 
     const invalidArgurmets = checkRequiredFieldsTransactions(req.body);
     if (invalidArgurmets) {
@@ -125,6 +126,7 @@ const updateTransactionForId = async (req, res) => {
 const detailTransactionForId = async (req, res) => {
   try {
     const { id } = req.params;
+    const categoria_nome = await categorieFoundId(id);
     const { id: userId } = req.loggedUser;
     let detailTransaction =
       await transactionsRepository.findTransactionsForIdAndUsuserId(id, userId);
@@ -134,7 +136,7 @@ const detailTransactionForId = async (req, res) => {
         mensagem: "Transação não encontrada.",
       });
     } else {
-      return res.status(200).json(detailTransaction.rows[0]);
+      return res.status(200).json({...detailTransaction.rows[0],categoria_nome:categoria_nome});
     }
   } catch (error) {
     res.status(500).json({
@@ -148,17 +150,22 @@ const getExtractForUser = async (req, res) => {
     const { id: userId } = req.loggedUser;
     const extractFound = await transactionsRepository.getExtractForUser(userId);
 
-    const response = {};
+    const response = {
+      entrada: 0,
+      saida: 0,
+    };
 
     extractFound.rows.forEach((row) => {
       const type = row.tipo;
       const total = row.sum;
-      if (response[type]) {
-        response[type] += total;
-      } else {
-        response[type] = total;
+      if (type === 'entrada') {
+        response.entrada += total;
+      } else if (type === 'saida') {
+        response.saida += total;
       }
-    });
+    });   
+    response.entrada = parseInt(response.entrada);
+    response.saida = parseInt(response.saida);   
 
     return res.status(200).json(response);
   } catch (error) {
