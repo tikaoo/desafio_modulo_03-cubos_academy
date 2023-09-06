@@ -6,20 +6,22 @@ const categories = async () => {
 
   return categoriesFound.rows;
 };
-const categorieFoundId = async (categorie_id) => {
-  const query = `SELECT descricao FROM categorias WHERE id = $1;`;
 
-  const { rows, rowCount } = await pool.query(query, [categorie_id]);
-
-  if (rowCount === 0) {
-    return {
-      mensagem: "Não existe categoria cadastrada com esse id.",
+const checkRegisteredCategorie = async (categorie_id) => {
+  const { rowCount } = await pool.query('SELECT * FROM categorias WHERE id = $1', [categorie_id]);
+  if (rowCount) {
+    return true;    
     };
-  }
+  return false;
+}
 
-  const categoria_nome = rows[0].descricao;
 
-  return categoria_nome;
+
+const getCategorieNameById = async (categorie_id) => {
+  const query = `SELECT descricao FROM categorias WHERE id = $1;`;
+  const { rows } = await pool.query(query, [categorie_id]);
+  const categorie_name = rows[0].descricao;
+  return categorie_name;
 };
 
-module.exports = { categories, categorieFoundId };
+module.exports = { categories, getCategorieNameById, checkRegisteredCategorie };

@@ -1,4 +1,3 @@
-
 const filterQueryParameters = (query, consultationList) => {
     const standardizedQuery = query.map(query => query.toLowerCase());
     const filteringResult = consultationList.filter(transaction => {

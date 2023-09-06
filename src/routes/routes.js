@@ -18,18 +18,14 @@ const {
 } = require("../controllers/transactionsController");
 const routes = express();
 
-//users
 routes.post('/usuario', validateRequiredFields, validateEmail, registerNewUser);
 routes.post('/login', validateRequiredFieldsLogin, validateLoginDatas, login);
 routes.use(checkUserLogin);
 routes.get('/usuario', detailUser);
 routes.put('/usuario', validateRequiredFields, validateEmail, updateUser);
 
-
-//categories
 routes.get("/categoria", listCategories);
 
-//transações
 routes.get("/transacao", listTransactions);
 routes.post("/transacao", createNewTransactions);
 routes.delete("/transacao/:id", deleteTransactions);

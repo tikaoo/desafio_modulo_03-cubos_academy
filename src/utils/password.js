@@ -8,6 +8,7 @@ const encryptedPassword = (userPassword) => {
 const comparePassword = (password, encryptedPassword) => {
     return bcrypt.compare(password, encryptedPassword);
 }
+
 module.exports = {
     encryptedPassword,
     comparePassword

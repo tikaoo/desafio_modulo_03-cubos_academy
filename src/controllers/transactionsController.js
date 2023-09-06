@@ -1,5 +1,5 @@
 const transactionsRepository = require("../repository/transactionsRepository");
-const { categorieFoundId } = require("../repository/categoriesRepository");
+const { getCategorieNameById, checkRegisteredCategorie } = require("../repository/categoriesRepository");
 const { checkRequiredFieldsTransactions } = require("../utils/utils");
 const filterQueryParameters = require("../utils/query");
 
@@ -27,15 +27,17 @@ const listTransactions = async (req, res) => {
 const createNewTransactions = async (req, res) => {
   try {
     const { tipo, descricao, valor, data, categoria_id } = req.body;
+    const { id: userId } = req.loggedUser;
 
     const invalidArgurmets = checkRequiredFieldsTransactions(req.body);
-
     if (invalidArgurmets) {
       return res.status(400).json(invalidArgurmets);
     }
 
-    const { id: userId } = req.loggedUser;
-    const categoria_nome = await categorieFoundId(categoria_id);
+    const categorieFound = await checkRegisteredCategorie(categoria_id);
+    if (!categorieFound) {
+      return res.status(404).json({ mensagem: "Categoria não cadastrada" });
+    }
 
     const resultTransaction =
       await transactionsRepository.createNewTransactions(
@@ -47,14 +49,11 @@ const createNewTransactions = async (req, res) => {
         categoria_id
       );
 
-    const resultTransactionWithCategorie = {
-      ...resultTransaction,
-      categoria_nome,
-    };
+    const categorie_name = await getCategorieNameById(categoria_id);
 
     return res.status(201).json({ 
-      ...resultTransactionWithCategorie.rows[0],
-      categoria_nome: categoria_nome,
+      ...resultTransaction.rows[0],
+      categoria_nome: categorie_name,
     });
   } catch (error) {
     return res
@@ -62,6 +61,7 @@ const createNewTransactions = async (req, res) => {
       .json({ mensagem: "Não foi possível cadastrar a transação" });
   }
 };
+
 const deleteTransactions = async (req, res) => {
   try {
     const { id } = req.params;
@@ -90,11 +90,14 @@ const updateTransactionForId = async (req, res) => {
   try {
     const { id } = req.params;
     const { descricao, valor, data, categoria_id, tipo } = req.body;
-    
 
     const invalidArgurmets = checkRequiredFieldsTransactions(req.body);
     if (invalidArgurmets) {
       return res.status(400).json(invalidArgurmets);
+    }
+    const categorieFound = await checkRegisteredCategorie(categoria_id);
+    if (!categorieFound) {
+      return res.status(404).json({ mensagem: "Categoria não cadastrada" });
     }
     const { id: userId } = req.loggedUser;
     let updatedTransaction =
@@ -126,8 +129,8 @@ const updateTransactionForId = async (req, res) => {
 const detailTransactionForId = async (req, res) => {
   try {
     const { id } = req.params;
-    const categoria_nome = await categorieFoundId(id);
     const { id: userId } = req.loggedUser;
+
     let detailTransaction =
       await transactionsRepository.findTransactionsForIdAndUsuserId(id, userId);
 
@@ -135,12 +138,16 @@ const detailTransactionForId = async (req, res) => {
       return res.status(404).json({
         mensagem: "Transação não encontrada.",
       });
-    } else {
-      return res.status(200).json({...detailTransaction.rows[0],categoria_nome:categoria_nome});
+
+    } else {      
+      const categorie_id = detailTransaction.rows[0].categoria_id;
+      const categorie_name = await getCategorieNameById(categorie_id);
+      return res.status(200).json({ ...detailTransaction.rows[0], categoria_nome: categorie_name });
     }
+
   } catch (error) {
     res.status(500).json({
-      messagem: "Não foi possível listar as transações",
+      messagem: "Não foi possível listar as transações"
     });
   }
 };

@@ -1,12 +1,10 @@
 const usersRepository = require("../repository/usersRepository");
-const jwt = require("jsonwebtoken");
 const { comparePassword } = require("../utils/password");
 const { tokenPassword } = require("../../sensitiveData");
 const { tokenValidation } = require("../utils/token");
 
 const validateRequiredFields = (req, res, next) => {
     const { nome, email, senha } = req.body;
-
     const datasForRegistration = {
         nome,
         email,
@@ -14,7 +12,6 @@ const validateRequiredFields = (req, res, next) => {
     }
 
     const incorrectDatas = Object.values(datasForRegistration).includes(undefined);
-
     if (incorrectDatas) {
         return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios' });
     }
@@ -25,8 +22,8 @@ const validateEmail = async (req, res, next) => {
     const { email } = req.body;
     const loggedUser = req.loggedUser;
     try {
-        const existedEmail = await usersRepository.checkEmailAlreadyRegistered(email);
-        if (existedEmail) {
+        const emailAlreadyRegistered = await usersRepository.checkEmailAlreadyRegistered(email);
+        if (emailAlreadyRegistered) {
             if (loggedUser) {
                 if (email !== loggedUser.email) {
                     return res.status(400).json({ mensagem: 'O e-mail informado já está sendo utilizado por outro usuário.' });
@@ -39,19 +36,16 @@ const validateEmail = async (req, res, next) => {
     } catch (error) {
         return res.status(500).json({ mensagem: 'Erro interno no servidor' });
     }
-
 }
 
 const validateRequiredFieldsLogin = (req, res, next) => {
     const { email, senha } = req.body;
-
     const datasForLogin = {
         email,
         senha
     }
 
     const incorrectData = Object.values(datasForLogin).includes(undefined);
-
     if (incorrectData) {
         return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios' });
     }
@@ -66,15 +60,14 @@ const validateLoginDatas = async (req, res, next) => {
         return res.status(401).json({ mensagem: 'Usuário e/ou senha inválido(s).' });
     }
     const userFound = userFoundByEmail[0];
-    const validPawword = await comparePassword(loginDatas.senha, userFound.senha)
-    if (!validPawword) {
+    const validPassword = await comparePassword(loginDatas.senha, userFound.senha)
+    if (!validPassword) {
         return res.status(401).json({ mensagem: "Usuário e/ou senha inválido(s)." });
     }
     next();
 }
 
 const checkUserLogin = async (req, res, next) => {
-
     if (!req.headers.authorization) {
         return res.status(401).json({ mensagem: 'Para acessar este recurso um token de autenticação válido deve ser enviado.' });
     }
