@@ -1,5 +1,8 @@
 const transactionsRepository = require("../repository/transactionsRepository");
-const { getCategorieNameById, checkRegisteredCategorie } = require("../repository/categoriesRepository");
+const {
+  getCategorieNameById,
+  checkRegisteredCategorie,
+} = require("../repository/categoriesRepository");
 const { checkRequiredFieldsTransactions } = require("../utils/utils");
 const filterQueryParameters = require("../utils/query");
 
@@ -11,14 +14,16 @@ const listTransactions = async (req, res) => {
       await transactionsRepository.findTransactionsForId(userId);
 
     if (queryParams) {
-      const queryResult = filterQueryParameters(queryParams, listAllTransactions);
+      const queryResult = filterQueryParameters(
+        queryParams,
+        listAllTransactions
+      );
       return res.status(200).json(queryResult);
     }
 
     return res.status(200).json(listAllTransactions);
   } catch (error) {
     res.status(500).json({
-
       mensagem: "Não foi possível listar as transações!",
     });
   }
@@ -33,11 +38,17 @@ const createNewTransactions = async (req, res) => {
     if (invalidArgurmets) {
       return res.status(400).json(invalidArgurmets);
     }
+    if (isNaN(id)) {
+      return res.status(400).json({
+        mensagem: "O ID fornecido não é um número válido.",
+      });
+    }
+    const categorie_name = await getCategorieNameById(categoria_id);
 
-    const categorieFound = await checkRegisteredCategorie(categoria_id);
-    if (!categorieFound) {
+    if (!categorie_name) {
       return res.status(404).json({ mensagem: "Categoria não cadastrada" });
     }
+    console.log(categorie_name);
 
     const resultTransaction =
       await transactionsRepository.createNewTransactions(
@@ -49,9 +60,7 @@ const createNewTransactions = async (req, res) => {
         categoria_id
       );
 
-    const categorie_name = await getCategorieNameById(categoria_id);
-
-    return res.status(201).json({ 
+    return res.status(201).json({
       ...resultTransaction.rows[0],
       categoria_nome: categorie_name,
     });
@@ -67,6 +76,11 @@ const deleteTransactions = async (req, res) => {
     const { id } = req.params;
     const { id: userId } = req.loggedUser;
 
+    if (isNaN(id)) {
+      return res.status(400).json({
+        mensagem: "O ID fornecido não é um número válido.",
+      });
+    }
     let findTransactionsForDelete =
       await transactionsRepository.findTransactionsForIdAndUsuserId(id, userId);
 
@@ -95,7 +109,12 @@ const updateTransactionForId = async (req, res) => {
     if (invalidArgurmets) {
       return res.status(400).json(invalidArgurmets);
     }
-    const categorieFound = await checkRegisteredCategorie(categoria_id);
+    if (isNaN(id)) {
+      return res.status(400).json({
+        mensagem: "O ID fornecido não é um número válido.",
+      });
+    }
+    const categorieFound = await getCategorieNameById(categoria_id);
     if (!categorieFound) {
       return res.status(404).json({ mensagem: "Categoria não cadastrada" });
     }
@@ -138,16 +157,17 @@ const detailTransactionForId = async (req, res) => {
       return res.status(404).json({
         mensagem: "Transação não encontrada.",
       });
-
-    } else {      
+    } else {
       const categorie_id = detailTransaction.rows[0].categoria_id;
       const categorie_name = await getCategorieNameById(categorie_id);
-      return res.status(200).json({ ...detailTransaction.rows[0], categoria_nome: categorie_name });
+      console.log(categorie_name);
+      return res
+        .status(200)
+        .json({ ...detailTransaction.rows[0], categoria_nome: categorie_name });
     }
-
   } catch (error) {
     res.status(500).json({
-      messagem: "Não foi possível listar as transações"
+      messagem: "Não foi possível listar as transações",
     });
   }
 };
@@ -165,14 +185,14 @@ const getExtractForUser = async (req, res) => {
     extractFound.rows.forEach((row) => {
       const type = row.tipo;
       const total = row.sum;
-      if (type === 'entrada') {
+      if (type === "entrada") {
         response.entrada += total;
-      } else if (type === 'saida') {
+      } else if (type === "saida") {
         response.saida += total;
       }
-    });   
+    });
     response.entrada = parseInt(response.entrada);
-    response.saida = parseInt(response.saida);   
+    response.saida = parseInt(response.saida);
 
     return res.status(200).json(response);
   } catch (error) {
