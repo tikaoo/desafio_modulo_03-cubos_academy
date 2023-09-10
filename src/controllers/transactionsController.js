@@ -191,8 +191,9 @@ const getExtractForUser = async (req, res) => {
         response.saida += total;
       }
     });
-    response.entrada = parseInt(response.entrada);
-    response.saida = parseInt(response.saida);
+    for (const key in response) {
+      response[key] = parseInt(response[key]);
+    }
 
     return res.status(200).json(response);
   } catch (error) {
